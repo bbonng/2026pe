@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>체육과 수행평가 조회</title>
+<style>
+  :root{
+    --court:#2E7D5B;--court-deep:#1B5E40;--line:#F4F1E8;--ball:#D7F25E;
+    --soccer:#1E5AA8;--soccer-deep:#143E73;
+    --ink:#13261D;--paper:#FBFAF5;--muted:#6B7C73;--warn:#C24A3B;
+    --shadow:0 8px 28px rgba(19,38,29,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,system-ui,sans-serif;
+    background:radial-gradient(circle at 20% -10%,rgba(215,242,94,.10),transparent 40%),
+      linear-gradient(160deg,#1B5E40 0%,#2E7D5B 55%,#34906A 100%);
+    min-height:100vh;color:var(--ink);display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{width:100%;max-width:500px;background:var(--paper);border-radius:22px;
+    box-shadow:var(--shadow);overflow:hidden;position:relative}
+  .court-top{background:var(--court-deep);padding:26px 28px 30px;color:var(--line);position:relative;overflow:hidden}
+  .court-top::after{content:"";position:absolute;left:28px;right:28px;bottom:14px;height:1px;background:rgba(244,241,232,.45)}
+  .court-top::before{content:"";position:absolute;left:50%;top:18px;bottom:14px;width:1px;background:rgba(244,241,232,.30)}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ball);font-weight:700;margin-bottom:8px}
+  .court-top h1{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.3}
+  .court-top p{font-size:13px;color:rgba(244,241,232,.75);margin-top:6px}
+  .body{padding:26px 28px 30px}
+  .step{display:none;animation:fade .4s ease}
+  .step.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  label{display:block;font-size:13px;font-weight:700;color:var(--court-deep);margin:14px 0 6px}
+  input{width:100%;padding:13px 15px;border:1.5px solid #DDE5DF;border-radius:12px;font-size:16px;font-family:inherit;background:#fff;transition:border .2s}
+  input:focus{outline:none;border-color:var(--court)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  button{width:100%;margin-top:20px;padding:15px;border:none;border-radius:13px;background:var(--court);color:#fff;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;letter-spacing:-.01em;transition:transform .12s,background .2s}
+  button:hover{background:var(--court-deep)}button:active{transform:scale(.98)}
+  .msg{font-size:13px;margin-top:12px;padding:10px 13px;border-radius:10px;display:none}
+  .msg.show{display:block}.msg.err{background:#FBEAE7;color:var(--warn)}.msg.ok{background:#E8F5EE;color:var(--court-deep)}
+  /* 종목 블록 */
+  .subj-block{margin-bottom:22px;border-radius:16px;overflow:hidden;border:1.5px solid #E4EBE6;background:#fff}
+  .subj-bar{padding:13px 18px;display:flex;justify-content:space-between;align-items:center;color:#fff}
+  .subj-bar.pe{background:var(--court)}
+  .subj-bar.soccer{background:var(--soccer)}
+  .subj-bar .nm{font-size:16px;font-weight:800}
+  .subj-bar .tot{font-size:13px;font-weight:700;opacity:.95}
+  .subj-bar .tot b{font-size:20px}
+  .subj-inner{padding:14px 16px}
+  .sentence{font-size:14.5px;line-height:1.65;font-weight:600;color:var(--ink);padding:4px 2px 12px;border-bottom:1px dashed #E0E7E2;margin-bottom:12px}
+  .item{padding:9px 0}
+  .item+.item{border-top:1px solid #F0F4F1}
+  .item-head{display:flex;justify-content:space-between;align-items:center}
+  .item-name{font-weight:700;font-size:14px}
+  .item-score{font-weight:800;font-size:14px}
+  .pe .item-score{color:var(--court)}
+  .soccer .item-score{color:var(--soccer)}
+  .item-score.miss{color:var(--muted);font-weight:600}
+  .item-fb{font-size:13px;color:#42564B;margin-top:6px;line-height:1.55}
+  .bar{height:5px;background:#EDF2EE;border-radius:4px;margin-top:7px;overflow:hidden}
+  .bar>i{display:block;height:100%;border-radius:4px}
+  .pe .bar>i{background:linear-gradient(90deg,var(--court),var(--ball))}
+  .soccer .bar>i{background:linear-gradient(90deg,var(--soccer),#7EB3F0)}
+  .notfound{font-size:13px;color:var(--muted);padding:10px 2px}
+  /* 동의 */
+  .consent{margin-top:8px;padding-top:18px;border-top:2px solid #E0E7E2}
+  .consent h3{font-size:15px;color:var(--court-deep);margin-bottom:6px}
+  .consent .sub{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .radio-row{display:flex;gap:10px}
+  .radio-opt{flex:1;padding:13px;border:1.5px solid #DDE5DF;border-radius:12px;text-align:center;cursor:pointer;font-weight:700;font-size:14px;transition:all .2s;background:#fff}
+  .radio-opt.sel-ok{border-color:var(--court);background:#E8F5EE;color:var(--court-deep)}
+  .radio-opt.sel-no{border-color:var(--warn);background:#FBEAE7;color:var(--warn)}
+  #objBox{display:none;margin-top:12px}
+  .obj-select{width:100%;padding:12px 14px;border:1.5px solid #DDE5DF;border-radius:12px;font-size:15px;font-family:inherit;background:#fff}
+  .obj-which{display:flex;gap:8px;margin:8px 0}
+  .obj-chip{flex:1;padding:9px;border:1.5px solid #DDE5DF;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:#fff}
+  .obj-chip.sel{border-color:var(--warn);background:#FBEAE7;color:var(--warn)}
+  .foot{text-align:center;font-size:11px;color:var(--muted);margin-top:20px;line-height:1.6}
+  .back{font-size:13px;color:var(--court);cursor:pointer;display:inline-block;margin-top:6px;font-weight:700}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;vertical-align:-3px;margin-right:6px}
+  @keyframes rot{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="court-top">
+    <div class="eyebrow">체육과 수행평가</div>
+    <h1 id="topTitle">내 점수 확인하기</h1>
+    <p id="topSub">이름과 생년월일로 본인 확인을 해주세요</p>
+  </div>
+  <div class="body">
+
+    <!-- STEP1 본인확인 -->
+    <div class="step active" id="step1">
+      <label>이름</label>
+      <input id="inName" placeholder="홍길동" autocomplete="off">
+      <label>생년월일 8자리</label>
+      <input id="inBirth" placeholder="20120315" inputmode="numeric" maxlength="8" autocomplete="off">
+      <div class="hint">예: 2012년 3월 15일 → 20120315</div>
+      <button id="btnLogin">다음</button>
+      <div class="msg" id="msg1"></div>
+    </div>
+
+    <!-- STEP2 비번 -->
+    <div class="step" id="step2">
+      <div id="pwSetBox">
+        <label>비밀번호 만들기 (숫자 4자리)</label>
+        <input id="inPwNew" inputmode="numeric" maxlength="4" type="password" placeholder="****">
+        <div class="hint">다음부터는 이 비밀번호로 확인합니다. 기억하기 쉬운 번호를 추천합니다.</div>
+        <button id="btnSetPw">설정하고 점수 보기</button>
+      </div>
+      <div id="pwLoginBox" style="display:none">
+        <label>비밀번호 (숫자 4자리)</label>
+        <input id="inPw" inputmode="numeric" maxlength="4" type="password" placeholder="****">
+        <button id="btnAuth">점수 확인</button>
+      </div>
+      <div class="msg" id="msg2"></div>
+      <span class="back" id="back1">← 본인확인 다시</span>
+    </div>
+
+    <!-- STEP3 결과(두 종목) + 동의 -->
+    <div class="step" id="step3">
+      <div id="subjArea"></div>
+      <div class="consent">
+        <h3>점수를 모두 확인했습니다. 어떤가요?</h3>
+        <div class="sub">체육·축구 점수를 확인하셨다면 아래에서 선택해 주세요.</div>
+        <div class="radio-row">
+          <div class="radio-opt" id="optOk">확인했고 이상 없음</div>
+          <div class="radio-opt" id="optNo">이의가 있음</div>
+        </div>
+        <div id="objBox">
+          <label>어느 종목에 이의가 있나요?</label>
+          <select id="objSelect" class="obj-select">
+            <option value="">— 종목 선택 —</option>
+          </select>
+          <input id="inReason" placeholder="이의 내용을 간단히 적어주세요" style="margin-top:10px">
+        </div>
+        <button id="btnConsent" disabled style="opacity:.5">제출</button>
+        <div class="msg" id="msg3"></div>
+      </div>
+      <span class="back" id="back1b">← 본인확인 다시</span>
+    </div>
+
+    <div class="foot">개인 점수는 본인만 확인할 수 있습니다.<br>문의는 담당 선생님께 말씀해 주세요.</div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'PASTE_YOUR_WEBAPP_URL_HERE';
+let STATE = { hakbun:null, name:'', objection:null, objSubject:null };
+const $ = id => document.getElementById(id);
+function show(s){ document.querySelectorAll('.step').forEach(x=>x.classList.remove('active')); $(s).classList.add('active'); }
+function showMsg(id,t,ty){ const m=$(id); m.textContent=t; m.className='msg show '+(ty||'err'); }
+function clearMsg(id){ $(id).className='msg'; }
+async function api(params){ const r=await fetch(API_URL+'?'+new URLSearchParams(params)); return r.json(); }
+function loading(b,on,l){ if(on){b.dataset.t=b.textContent;b.innerHTML='<span class="spin"></span>'+(l||'처리 중');b.disabled=true;}else{b.textContent=b.dataset.t;b.disabled=false;} }
+
+$('btnLogin').onclick=async()=>{
+  const name=$('inName').value.trim(), birth=$('inBirth').value.trim();
+  clearMsg('msg1');
+  if(!name){showMsg('msg1','이름을 입력하세요');return;}
+  if(!/^\d{8}$/.test(birth)){showMsg('msg1','생년월일 8자리를 정확히 입력하세요');return;}
+  loading($('btnLogin'),true,'확인 중');
+  try{
+    const r=await api({action:'login',name,birth});
+    loading($('btnLogin'),false);
+    if(!r.ok){showMsg('msg1',r.msg);return;}
+    STATE.hakbun=r.hakbun; STATE.name=r.name;
+    $('topTitle').textContent=r.name+' 학생';
+    if(r.hasPw){ $('topSub').textContent='비밀번호를 입력하세요'; $('pwSetBox').style.display='none'; $('pwLoginBox').style.display='block'; }
+    else { $('topSub').textContent='처음이시네요. 비밀번호를 만들어 주세요'; $('pwSetBox').style.display='block'; $('pwLoginBox').style.display='none'; }
+    show('step2');
+  }catch(e){ loading($('btnLogin'),false); showMsg('msg1','연결 오류. 잠시 후 다시'); }
+};
+$('btnSetPw').onclick=async()=>{
+  const pw=$('inPwNew').value.trim(); clearMsg('msg2');
+  if(!/^\d{4}$/.test(pw)){showMsg('msg2','숫자 4자리를 입력하세요');return;}
+  loading($('btnSetPw'),true,'설정 중');
+  try{ const r=await api({action:'setpw',hakbun:STATE.hakbun,pw}); loading($('btnSetPw'),false);
+    if(!r.ok){showMsg('msg2',r.msg);return;} await loadScores();
+  }catch(e){ loading($('btnSetPw'),false); showMsg('msg2','연결 오류'); }
+};
+$('btnAuth').onclick=async()=>{
+  const pw=$('inPw').value.trim(); clearMsg('msg2');
+  if(!/^\d{4}$/.test(pw)){showMsg('msg2','숫자 4자리를 입력하세요');return;}
+  loading($('btnAuth'),true,'확인 중');
+  try{ const r=await api({action:'auth',hakbun:STATE.hakbun,pw}); loading($('btnAuth'),false);
+    if(!r.ok){showMsg('msg2',r.msg);return;} await loadScores();
+  }catch(e){ loading($('btnAuth'),false); showMsg('msg2','연결 오류'); }
+};
+function resetConsent(){ STATE.objection=null;STATE.objSubject=null;
+  $('optOk').className='radio-opt';$('optNo').className='radio-opt';$('objBox').style.display='none';
+  if($('objSelect')) $('objSelect').value='';
+  $('inReason').value='';$('btnConsent').disabled=true;$('btnConsent').style.opacity=.5; clearMsg('msg3'); }
+
+async function loadScores(){
+  show('step3'); resetConsent();
+  $('subjArea').innerHTML='<div style="color:#6B7C73;font-size:13px;padding:20px 0;text-align:center"><span class="spin" style="border-color:#ccc;border-top-color:#2E7D5B"></span> 점수를 불러오는 중…</div>';
+  const r=await api({action:'scoreall',hakbun:STATE.hakbun});
+  if(!r.ok){ $('subjArea').innerHTML='<div class="notfound">'+r.msg+'</div>'; return; }
+  $('subjArea').innerHTML='';
+  // 이의 드롭다운 옵션 구성
+  const sel=$('objSelect');
+  sel.innerHTML='<option value="">— 종목 선택 —</option>';
+  r.subjects.forEach(sub=>{ const o=document.createElement('option'); o.value=sub.label; o.textContent=sub.label; sel.appendChild(o); });
+  if(r.subjects.length>1){ const o=document.createElement('option'); o.value='ALL'; o.textContent='둘 다'; sel.appendChild(o); }
+  r.subjects.forEach(sub=>{
+    const cls = sub.label==='피클볼'?'pe':'soccer';
+    const block=document.createElement('div'); block.className='subj-block';
+    if(!sub.found){
+      block.innerHTML=`<div class="subj-bar ${cls}"><span class="nm">${sub.label}</span></div><div class="subj-inner"><div class="notfound">${sub.sentence}</div></div>`;
+      $('subjArea').appendChild(block); return;
+    }
+    let itemsHtml='';
+    sub.details.forEach(d=>{
+      let sc,bar='';
+      if(d.missing){ sc=`<span class="item-score miss">미응시</span>`; }
+      else if(d.type==='점수'){ sc=`<span class="item-score">${d.score} / ${d.manjeom}</span>`;
+        bar=`<div class="bar"><i style="width:${Math.round(d.score/d.manjeom*100)}%"></i></div>`; }
+      else { sc=`<span class="item-score">${d.score}</span>`; }
+      itemsHtml+=`<div class="item"><div class="item-head"><span class="item-name">${d.name}</span>${sc}</div>${bar}${d.feedback?`<div class="item-fb">${d.feedback}</div>`:''}</div>`;
+    });
+    block.innerHTML=`
+      <div class="subj-bar ${cls}">
+        <span class="nm">${sub.label}</span>
+        <span class="tot">총점 <b>${sub.totalScore}</b>${sub.totalMax?(' / '+sub.totalMax):''}</span>
+      </div>
+      <div class="subj-inner">
+        <div class="sentence">${sub.sentence}</div>
+        ${itemsHtml}
+      </div>`;
+    $('subjArea').appendChild(block);
+  });
+}
+
+$('optOk').onclick=()=>{ STATE.objection='N';STATE.objSubject=null;
+  $('optOk').className='radio-opt sel-ok';$('optNo').className='radio-opt';$('objBox').style.display='none';
+  $('btnConsent').disabled=false;$('btnConsent').style.opacity=1; };
+$('optNo').onclick=()=>{ STATE.objection='Y';
+  $('optNo').className='radio-opt sel-no';$('optOk').className='radio-opt';$('objBox').style.display='block';
+  const ok=!!STATE.objSubject; $('btnConsent').disabled=!ok; $('btnConsent').style.opacity=ok?1:.5; };
+$('objSelect').onchange=()=>{
+  STATE.objSubject=$('objSelect').value;
+  const ok = STATE.objSubject!=='';
+  $('btnConsent').disabled=!ok; $('btnConsent').style.opacity=ok?1:.5;
+};
+$('btnConsent').onclick=async()=>{
+  if(!STATE.objection) return;
+  if(STATE.objection==='Y' && !STATE.objSubject){ showMsg('msg3','이의 종목을 선택하세요'); return; }
+  loading($('btnConsent'),true,'제출 중');
+  try{
+    const r=await api({action:'consent',hakbun:STATE.hakbun,objection:STATE.objection,
+      objSubject:STATE.objSubject||'',reason:$('inReason').value.trim()});
+    loading($('btnConsent'),false);
+    if(!r.ok){showMsg('msg3',r.msg);return;}
+    showMsg('msg3',r.msg,'ok'); $('btnConsent').disabled=true;$('btnConsent').style.opacity=.5;
+  }catch(e){ loading($('btnConsent'),false); showMsg('msg3','연결 오류'); }
+};
+$('back1').onclick=$('back1b').onclick=()=>{ show('step1');
+  $('topTitle').textContent='내 점수 확인하기'; $('topSub').textContent='이름과 생년월일로 본인 확인을 해주세요'; };
+$('inBirth').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnLogin').click()});
+$('inPwNew').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnSetPw').click()});
+$('inPw').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnAuth').click()});
+</script>
+</body>
+</html>
